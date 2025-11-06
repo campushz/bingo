@@ -1,0 +1,94 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Bingo Card</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 24px; }
+  .ctrl { margin-bottom: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .grid { display: grid; grid-template-columns: repeat(5, 80px); gap: 6px; }
+  .cell { display: grid; place-items: center; height: 80px; border: 1px solid #555; user-select: none; cursor: pointer; }
+  .free { color: #777; }
+  .marked { color: #b00000; font-weight: 700; }
+  button { padding: 6px 12px; }
+  input[type=number]{ width: 100px; }
+</style>
+<div class="ctrl">
+  <label>最小値 <input id="min" type="number" value="1"></label>
+  <label>最大値 <input id="max" type="number" value="75"></label>
+  <button id="gen">カード生成</button>
+</div>
+<div id="grid" class="grid" aria-label="bingo-grid"></div>
+
+<script>
+  const grid = document.getElementById('grid');
+  const minEl = document.getElementById('min');
+  const maxEl = document.getElementById('max');
+  const genBtn = document.getElementById('gen');
+
+  let labels = Array.from({length:5},()=>Array(5).fill(""));
+  let marked = Array.from({length:5},()=>Array(5).fill(false));
+
+  function shuffle(arr){
+    for(let i=arr.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [arr[i],arr[j]]=[arr[j],arr[i]];
+    }
+    return arr;
+  }
+
+  function generate(){
+    const min = parseInt(minEl.value,10);
+    const max = parseInt(maxEl.value,10);
+    if (Number.isNaN(min) || Number.isNaN(max)) { alert("整数を入力してください"); return; }
+    if (min > max) { alert("最小値が最大値より大きいです"); return; }
+    if ((max - min + 1) < 24) { alert("範囲が狭すぎます（24種類以上が必要）"); return; }
+
+    const pool = [];
+    for(let v=min; v<=max; v++) pool.push(v);
+    shuffle(pool);
+
+    let idx = 0;
+    for(let r=0;r<5;r++){
+      for(let c=0;c<5;c++){
+        if (r===2 && c===2) {
+          labels[r][c] = "FREE";
+        } else {
+          labels[r][c] = String(pool[idx++]);
+        }
+        marked[r][c] = false;
+      }
+    }
+    render();
+  }
+
+  function render(){
+    grid.innerHTML = "";
+    for(let r=0;r<5;r++){
+      for(let c=0;c<5;c++){
+        const div = document.createElement('div');
+        div.className = "cell";
+        const isFree = (r===2 && c===2);
+        const txt = marked[r][c] ? "✖" : labels[r][c];
+        if (isFree && !marked[r][c]) div.classList.add("free");
+        if (marked[r][c]) div.classList.add("marked");
+        div.textContent = txt;
+        div.addEventListener('click', ()=>{
+          marked[r][c] = !marked[r][c];
+          renderCell(div, r, c);
+        });
+        grid.appendChild(div);
+      }
+    }
+  }
+
+  function renderCell(div, r, c){
+    const isFree = (r===2 && c===2);
+    div.classList.remove("free","marked");
+    div.textContent = marked[r][c] ? "✖" : labels[r][c];
+    if (isFree && !marked[r][c]) div.classList.add("free");
+    if (marked[r][c]) div.classList.add("marked");
+  }
+
+  genBtn.addEventListener('click', generate);
+  // 初期表示
+  generate();
+</script>
